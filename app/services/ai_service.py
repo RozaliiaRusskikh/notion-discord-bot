@@ -61,9 +61,6 @@ class AIService:
             action, ("Summarize this data.", self._format_pages(data))
         )
 
-        if not data.pages and action != ActionType.UPDATES:
-            return content  # Return "no results" message directly
-
         try:
             response = self.llm.invoke(
                 [
