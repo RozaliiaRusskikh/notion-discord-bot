@@ -24,7 +24,7 @@ class NotionService:
         pages = self._parse_pages(results)
         return NotionData(pages=pages, total_count=len(pages))
 
-    def get_updates(self, database_id: str, hours: int = 24) -> NotionData:
+    def get_recent_updates(self, database_id: str, hours: int = 24) -> NotionData:
         logger.info(f"Getting updates from last {hours}h")
         cutoff = datetime.now(timezone.utc) - timedelta(hours=hours)
         results = self.client.databases.query(

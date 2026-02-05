@@ -8,112 +8,86 @@ from app.logger import setup_logger
 logger = setup_logger(__name__)
 
 
-class State(TypedDict):
+class PipelineState(TypedDict):
     command: Command
-    data: NotionData | None
+    notion_data: NotionData | None
     response: str | None
     error: str | None
+    pages_analyzed: int
 
 
-def _resolve_database_id(target: str) -> str | None:
-    """Safely converts database name to ID with exact-match priority"""
-    clean = target.replace("-", "")
-    if len(clean) == 32 and all(c in "0123456789abcdef" for c in clean.lower()):
-        return target
-
-    try:
-        results = notion_service.client.search(
-            query=target,
-            filter={"property": "object", "value": "database"},
-        ).get("results", [])
-
-        if not results:
-            return None
-
-        # Try to find exact match first
-        for res in results:
-            title = notion_service._get_title(res)
-            if title.lower() == target.lower():
-                return res["id"]
-
-        # Fallback to first search result
-        return results[0]["id"]
-    except Exception as e:
-        logger.error(f"Database lookup failed: {e}")
-        return None
-
-
-def fetch(state: State) -> dict:
+def fetch_data(state: PipelineState) -> PipelineState:
     cmd = state["command"]
+    logger.info(f"Fetching: {cmd.action.value}")
+
     try:
-        match cmd.action:
-            case ActionType.SEARCH:
-                data = notion_service.search_pages(cmd.query or cmd.target)
+        if cmd.action == ActionType.SEARCH:
+            data = notion_service.search_pages(cmd.query or cmd.target)
+        elif cmd.action == ActionType.UPDATES:
+            data = notion_service.get_recent_updates(cmd.target)
+        elif cmd.action == ActionType.SUMMARY:
+            data = notion_service.search_pages(cmd.target)
+            if data.pages:
+                content = notion_service.get_page_content(data.pages[0].page_id)
+                data.pages[0].content = content
+        else:
+            data = notion_service.query_database(cmd.target)
 
-            case ActionType.SUMMARY:
-                data = notion_service.search_pages(cmd.target)
-                if data.pages:
-                    # Enrich first page with full content
-                    page_id = data.pages[0].page_id
-                    data.pages[0].content = notion_service.get_page_content(page_id)
-
-            case ActionType.STATUS | ActionType.LIST | ActionType.UPDATES:
-                db_id = _resolve_database_id(cmd.target)
-                if not db_id:
-                    data = NotionData(pages=[], total_count=0)
-                elif cmd.action == ActionType.UPDATES:
-                    data = notion_service.get_updates(db_id)
-                else:
-                    data = notion_service.query_database(db_id)
-            case _:
-                data = notion_service.search_pages(cmd.target)
-
-        return {"data": data, "error": None}
-    except Exception as e:
-        return {"error": str(e)}
-
-
-def analyze(state: State) -> dict:
-    cmd, data = state["command"], state["data"]
-
-    if not data or not data.pages:
-        # Custom logic for "No Results"
-        msgs = {
-            ActionType.UPDATES: "No recent updates found.",
-            ActionType.SUMMARY: "Page not found.",
-        }
         return {
-            "response": msgs.get(
-                cmd.action, f"Could not find any data for '{cmd.target}'."
-            )
+            **state,
+            "notion_data": data,
+            "pages_analyzed": len(data.pages),
         }
+    except Exception as e:
+        logger.error(f"Fetch failed: {e}")
+        return {**state, "error": str(e)}
+
+
+def analyze_data(state: PipelineState) -> PipelineState:
+    cmd = state["command"]
+    logger.info(f"Analyzing: {cmd.action.value}")
 
     try:
-        response = ai_service.generate_response(
-            action=cmd.action, data=data, query=cmd.query
+        response = ai_service.process_action(
+            action=cmd.action,
+            notion_data=state["notion_data"],
+            query=cmd.query,
         )
-        return {"response": response}
+        return {**state, "response": response}
     except Exception as e:
-        return {"error": str(e)}
+        logger.error(f"Analysis failed: {e}")
+        return {**state, "error": str(e)}
 
 
-def handle_error(state: State) -> dict:
-    return {"response": f"❌ Error: {state.get('error', 'Unknown error occurred.')}"}
+def handle_error(state: PipelineState) -> PipelineState:
+    error = state.get("error", "Unknown error")
+    return {**state, "response": f"❌ Error: {error}"}
 
 
-def route(state: State) -> Literal["analyze", "error"]:
-    return "error" if state.get("error") else "analyze"
+def route_after_fetch(state: PipelineState) -> Literal["analyze", "error"]:
+    if state.get("error"):
+        return "error"
+    if state["pages_analyzed"] == 0 and state["command"].action != ActionType.UPDATES:
+        return "error"
+    return "analyze"
 
 
-# Build Graph
-workflow = StateGraph(State)
-workflow.add_node("fetch", fetch)
-workflow.add_node("analyze", analyze)
+workflow = StateGraph(PipelineState)
+
+workflow.add_node("fetch", fetch_data)
+workflow.add_node("analyze", analyze_data)
 workflow.add_node("error", handle_error)
 
 workflow.set_entry_point("fetch")
-workflow.add_conditional_edges("fetch", route)
+
+workflow.add_conditional_edges(
+    "fetch",
+    route_after_fetch,
+    {"analyze": "analyze", "error": "error"},
+)
+
 workflow.add_edge("analyze", END)
 workflow.add_edge("error", END)
 
 pipeline = workflow.compile()
+logger.info("✅ LangGraph pipeline compiled")
