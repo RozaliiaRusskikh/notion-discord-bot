@@ -25,7 +25,7 @@ class NotionService:
         logger.info(f"Searching: {query}")
         results = self.client.search(query=query).get("results", [])[:10]
         pages = self._parse_pages([r for r in results if r["object"] == "page"])
-        return NotionData(pages=pages, total_count=len(pages), database_id="search")
+        return NotionData(pages=pages, total_count=len(pages))
 
     def get_updates(self, database_id: str, hours: int = 24) -> NotionData:
         """Get recently updated pages"""

@@ -24,7 +24,7 @@ class NotionPage(BaseModel):
 class NotionData(BaseModel):
     pages: list[NotionPage]
     total_count: int
-    database_id: str
+    database_id: str | None = None
 
 
 class Command(BaseModel):
