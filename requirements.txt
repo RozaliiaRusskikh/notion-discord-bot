@@ -1,0 +1,25 @@
+# FastAPI
+fastapi==0.115.5
+uvicorn[standard]==0.34.0
+
+# Discord
+py-cord==2.6.1
+
+# GitHub
+PyGithub==2.1.1
+
+# Notion
+notion-client==2.7.0
+
+# AI (LangChain + Gemini)
+langchain==0.3.13
+langchain-google-genai==2.0.6
+langgraph==0.2.45
+langchain-community==0.3.13
+
+# Pydantic
+pydantic==2.10.3
+pydantic-settings==2.6.1
+
+# Utils
+python-dotenv==1.0.0
