@@ -1,6 +1,5 @@
 from typing import TypedDict, Literal
 from langgraph.graph import StateGraph, END
-
 from app.models import NotionData, Command, ActionType
 from app.services.notion_service import notion_service
 from app.services.ai_service import ai_service
@@ -17,122 +16,104 @@ class State(TypedDict):
 
 
 def _resolve_database_id(target: str) -> str | None:
-    """Convert database name to ID, or return as-is if already an ID"""
+    """Safely converts database name to ID with exact-match priority"""
     clean = target.replace("-", "")
     if len(clean) == 32 and all(c in "0123456789abcdef" for c in clean.lower()):
         return target
 
-    logger.info(f"Looking up database: {target}")
     try:
         results = notion_service.client.search(
             query=target,
             filter={"property": "object", "value": "database"},
         ).get("results", [])
 
-        if results:
-            db_id = results[0]["id"]
-            logger.info(f"Found database: {db_id}")
-            return db_id
+        if not results:
+            return None
 
-        logger.warning(f"Database not found: {target}")
-        return None
+        # Try to find exact match first
+        for res in results:
+            title = notion_service._get_title(res)
+            if title.lower() == target.lower():
+                return res["id"]
+
+        # Fallback to first search result
+        return results[0]["id"]
     except Exception as e:
         logger.error(f"Database lookup failed: {e}")
         return None
 
 
-def fetch(state: State) -> State:
-    """Fetch data from Notion based on action"""
+def fetch(state: State) -> dict:
     cmd = state["command"]
-    logger.info(f"Fetch: {cmd.action.value} → {cmd.target}")
-
     try:
         match cmd.action:
-            # SEARCH: Just search, no ID needed
             case ActionType.SEARCH:
                 data = notion_service.search_pages(cmd.query or cmd.target)
 
-            # SUMMARY: Search for page by name → get ID → fetch content
             case ActionType.SUMMARY:
                 data = notion_service.search_pages(cmd.target)
                 if data.pages:
+                    # Enrich first page with full content
                     page_id = data.pages[0].page_id
                     data.pages[0].content = notion_service.get_page_content(page_id)
 
-            # STATUS, LIST, UPDATES: Need database ID
             case ActionType.STATUS | ActionType.LIST | ActionType.UPDATES:
-                database_id = _resolve_database_id(cmd.target)
-
-                if not database_id:
-                    data = NotionData(pages=[], total_count=0, database_id=None)
+                db_id = _resolve_database_id(cmd.target)
+                if not db_id:
+                    data = NotionData(pages=[], total_count=0)
                 elif cmd.action == ActionType.UPDATES:
-                    data = notion_service.get_updates(database_id)
+                    data = notion_service.get_updates(db_id)
                 else:
-                    data = notion_service.query_database(database_id)
-
-            # Fallback
+                    data = notion_service.query_database(db_id)
             case _:
                 data = notion_service.search_pages(cmd.target)
 
-        return {**state, "data": data}
-
+        return {"data": data, "error": None}
     except Exception as e:
-        logger.error(f"Fetch error: {e}")
-        return {**state, "error": str(e)}
+        return {"error": str(e)}
 
 
-def analyze(state: State) -> State:
-    """Generate AI response"""
-    cmd = state["command"]
-    data = state["data"]
-    logger.info(f"Analyze: {cmd.action.value}")
+def analyze(state: State) -> dict:
+    cmd, data = state["command"], state["data"]
 
-    # Handle empty results
     if not data or not data.pages:
-        messages = {
-            ActionType.SEARCH: f"No results for '{cmd.query or cmd.target}'.",
-            ActionType.SUMMARY: f"Page '{cmd.target}' not found.",
-            ActionType.STATUS: f"Database '{cmd.target}' not found.",
-            ActionType.LIST: f"Database '{cmd.target}' not found.",
-            ActionType.UPDATES: f"No recent updates in '{cmd.target}'.",
+        # Custom logic for "No Results"
+        msgs = {
+            ActionType.UPDATES: "No recent updates found.",
+            ActionType.SUMMARY: "Page not found.",
         }
-        return {**state, "response": messages.get(cmd.action, "No data found.")}
+        return {
+            "response": msgs.get(
+                cmd.action, f"Could not find any data for '{cmd.target}'."
+            )
+        }
 
     try:
         response = ai_service.generate_response(
-            action=cmd.action,
-            data=data,
-            query=cmd.query,
+            action=cmd.action, data=data, query=cmd.query
         )
-        return {**state, "response": response}
-
+        return {"response": response}
     except Exception as e:
-        logger.error(f"Analyze error: {e}")
-        return {**state, "error": str(e)}
+        return {"error": str(e)}
 
 
-def handle_error(state: State) -> State:
-    """Format error response"""
-    return {**state, "response": f"❌ Error: {state.get('error', 'Unknown')}"}
+def handle_error(state: State) -> dict:
+    return {"response": f"❌ Error: {state.get('error', 'Unknown error occurred.')}"}
 
 
 def route(state: State) -> Literal["analyze", "error"]:
-    """Route based on fetch result"""
-    if state.get("error"):
-        return "error"
-    return "analyze"
+    return "error" if state.get("error") else "analyze"
 
 
-# Build graph
-graph = StateGraph(State)
-graph.add_node("fetch", fetch)
-graph.add_node("analyze", analyze)
-graph.add_node("error", handle_error)
+# Build Graph
+workflow = StateGraph(State)
+workflow.add_node("fetch", fetch)
+workflow.add_node("analyze", analyze)
+workflow.add_node("error", handle_error)
 
-graph.set_entry_point("fetch")
-graph.add_conditional_edges("fetch", route, {"analyze": "analyze", "error": "error"})
-graph.add_edge("analyze", END)
-graph.add_edge("error", END)
+workflow.set_entry_point("fetch")
+workflow.add_conditional_edges("fetch", route)
+workflow.add_edge("analyze", END)
+workflow.add_edge("error", END)
 
-pipeline = graph.compile()
-logger.info("✅ Pipeline ready")
+pipeline = workflow.compile()
