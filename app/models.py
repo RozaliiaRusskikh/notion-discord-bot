@@ -47,6 +47,8 @@ class BotResponse(BaseModel):
     content: str
     pages_analyzed: int
     timestamp: datetime
+    success: bool = True
+    error: str | None = None
 
 
 class HealthCheck(BaseModel):
