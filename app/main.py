@@ -1,7 +1,7 @@
 import discord
 from discord import app_commands
 import asyncio
-from fastapi import FastAPI
+from fastapi import FastAPI, Response, status
 from contextlib import asynccontextmanager
 from datetime import datetime
 
@@ -243,12 +243,22 @@ async def root():
 
 
 @api.get("/health", response_model=HealthCheck)
-async def health():
+async def health(response: Response):
+    discord_healthy = bot.is_ready()
+    notion_healthy = notion_service.health_check()
+    ai_healthy = ai_service.health_check()
+    
+    all_healthy = discord_healthy and notion_healthy and ai_healthy
+    
+    # Set appropriate HTTP status code
+    if not all_healthy:
+        response.status_code = status.HTTP_503_SERVICE_UNAVAILABLE
+    
     return HealthCheck(
-        status="healthy",
-        discord=bot.is_ready(),
-        notion=notion_service.health_check(),
-        ai=ai_service.health_check(),
+        status="healthy" if all_healthy else "degraded",
+        discord=discord_healthy,
+        notion=notion_healthy,
+        ai=ai_healthy,
     )
 
 
