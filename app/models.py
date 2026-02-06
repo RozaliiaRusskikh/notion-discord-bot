@@ -5,10 +5,10 @@ from enum import Enum
 
 class ActionType(str, Enum):
     STATUS = "status"
-    SEARCH = "search"
-    LIST = "list"
-    UPDATES = "updates"
-    SUMMARY = "summary"
+    SEARCH = "search"  # Find by title/keyword
+    LIST = "list"  # All pages, newest first
+    UPDATES = "updates"  # Same as list, but emphasizing "recently edited"
+    SUMMARY = "summary"  # Deep dive into one page content
 
 
 class NotionPage(BaseModel):
@@ -18,13 +18,11 @@ class NotionPage(BaseModel):
     updated_at: datetime
     created_at: datetime
     url: str | None = None
-    content: str | None = None
 
 
 class NotionData(BaseModel):
     pages: list[NotionPage]
     total_count: int
-    database_id: str | None = None
 
 
 class Command(BaseModel):
@@ -34,13 +32,6 @@ class Command(BaseModel):
     query: str | None = None
     original_message: str | None = None
     timestamp: datetime = Field(default_factory=datetime.now)
-
-
-class BotResponse(BaseModel):
-    content: str
-    pages_analyzed: int
-    success: bool = True
-    error: str | None = None
 
 
 class HealthCheck(BaseModel):
