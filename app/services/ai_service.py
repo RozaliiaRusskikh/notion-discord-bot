@@ -27,10 +27,6 @@ class AIService:
         """Generate response based on action type"""
 
         prompts = {
-            ActionType.STATUS: (
-                "Provide a brief status report. Include total pages and recent activity.",
-                self._format_pages(data),
-            ),
             ActionType.SEARCH: (
                 "Present these search results clearly.",
                 (
@@ -41,7 +37,7 @@ class AIService:
             ),
             ActionType.LIST: (
                 "List these pages in an organized format.",
-                self._format_pages(data),
+                self._format_pages(data) if data.pages else "No pages found.",
             ),
             ActionType.UPDATES: (
                 "Summarize these recent changes. What was updated and when?",

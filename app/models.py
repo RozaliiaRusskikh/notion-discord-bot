@@ -4,7 +4,6 @@ from enum import Enum
 
 
 class ActionType(str, Enum):
-    STATUS = "status"
     SEARCH = "search"  # Find by title/keyword
     LIST = "list"  # All pages, newest first
     UPDATES = "updates"  # Same as list, but emphasizing "recently edited"

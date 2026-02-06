@@ -27,8 +27,8 @@ def fetch(state: State) -> State:
                 # Search by keyword
                 data = notion_service.search_by_keyword(cmd.query or cmd.target)
 
-            case ActionType.LIST | ActionType.STATUS:
-                # Get all pages (optionally from a specific database)
+            case ActionType.LIST:
+                # Get all pages
                 data = notion_service.fetch_data()
 
             case ActionType.UPDATES:
@@ -63,7 +63,6 @@ def analyze(state: State) -> State:
         messages = {
             ActionType.SEARCH: f"No results for '{cmd.query or cmd.target}'.",
             ActionType.SUMMARY: f"Page '{cmd.target}' not found.",
-            ActionType.STATUS: "No pages found in workspace.",
             ActionType.LIST: "No pages found in workspace.",
             ActionType.UPDATES: "No recent updates.",
         }
