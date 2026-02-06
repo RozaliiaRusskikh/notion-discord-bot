@@ -79,53 +79,7 @@ async def on_ready():
     logger.info(f"✅ Servers: {len(bot.guilds)}")
 
 
-# ===== SLASH COMMAND =====
-
-
-@bot.tree.command(name="notion", description="Query your Notion workspace")
-@app_commands.describe(
-    action="What to do",
-    query="Search terms or page name (optional)",
-)
-@app_commands.choices(
-    action=[
-        app_commands.Choice(name="🔍 Search - Find by keyword", value="search"),
-        app_commands.Choice(name="📋 List - All pages paginated", value="list"),
-        app_commands.Choice(name="🔄 Updates - Recent changes", value="updates"),
-        app_commands.Choice(name="📝 Summary - Summarize a page", value="summary"),
-    ]
-)
-async def slash_notion(
-    interaction: discord.Interaction,
-    action: str,
-    query: str | None = None,
-):
-    await interaction.response.defer()
-
-    cmd = Command(
-        user_id=str(interaction.user.id),
-        action=ActionType(action),
-        target=query or "workspace",
-        query=query,
-    )
-
-    result = await process_command(cmd)
-
-    title = f"Notion {action.title()}"
-    if query:
-        title += f": {query}"
-
-    embed = create_embed(
-        title=title,
-        content=result["response"],
-        action=cmd.action,
-        pages=result["pages"],
-    )
-
-    await interaction.followup.send(embed=embed)
-
-
-# ===== INDIVIDUAL ACTION COMMANDS =====
+# ===== SLASH COMMANDS =====
 
 
 @bot.tree.command(name="search", description="🔍 Search pages by keyword")
@@ -305,7 +259,6 @@ if __name__ == "__main__":
     logger.info("  /list")
     logger.info("  /updates")
     logger.info("  /summary page:roadmap")
-    logger.info("  /notion action:search query:meeting (legacy)")
     logger.info("")
     logger.info("Natural language:")
     logger.info("  What's in my workspace?")
