@@ -40,9 +40,9 @@ def create_embed(
 ) -> discord.Embed:
     """Create Discord embed"""
     colors = {
-        ActionType.SEARCH: discord.Color.blue(),
+        ActionType.SEARCH: discord.Color.green(),
         ActionType.LIST: discord.Color.purple(),
-        ActionType.UPDATES: discord.Color.green(),
+        ActionType.UPDATES: discord.Color.blue(),
         ActionType.SUMMARY: discord.Color.gold(),
     }
     embed = discord.Embed(
@@ -156,24 +156,24 @@ async def slash_updates(interaction: discord.Interaction):
 
 
 @bot.tree.command(name="summary", description="📝 Summarize a specific page")
-@app_commands.describe(page="Page name or title")
+@app_commands.describe(target="Page name or title")
 async def slash_summary(
     interaction: discord.Interaction,
-    page: str,
+    target: str,
 ):
     await interaction.response.defer()
 
     cmd = Command(
         user_id=str(interaction.user.id),
         action=ActionType.SUMMARY,
-        target=page,
+        target=target,
         query=None,
     )
 
     result = await process_command(cmd)
 
     embed = create_embed(
-        title=f"📝 Summary: {page}",
+        title=f"📝 Summary: {target}",
         content=result["response"],
         action=cmd.action,
         pages=result["pages"],
