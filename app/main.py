@@ -90,7 +90,7 @@ async def on_ready():
 @app_commands.choices(
     action=[
         app_commands.Choice(name="🔍 Search - Find by keyword", value="search"),
-        app_commands.Choice(name="📋 List - All pages", value="list"),
+        app_commands.Choice(name="📋 List - All pages paginated", value="list"),
         app_commands.Choice(name="🔄 Updates - Recent changes", value="updates"),
         app_commands.Choice(name="📝 Summary - Summarize a page", value="summary"),
     ]
@@ -198,7 +198,6 @@ if __name__ == "__main__":
     logger.info("🚀 NOTION DISCORD BOT")
     logger.info("=" * 50)
     logger.info("Slash commands:")
-    logger.info("  /notion action:status")
     logger.info("  /notion action:search query:meeting")
     logger.info("  /notion action:list")
     logger.info("  /notion action:updates")
