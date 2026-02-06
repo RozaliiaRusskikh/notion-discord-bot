@@ -35,7 +35,7 @@ class IntentParser:
 
     def __init__(self):
         self.llm = ChatGoogleGenerativeAI(
-            model="gemini-pro",
+            model="gemini-2.5-flash",
             google_api_key=settings.gemini_api_key,
             temperature=0,
         )
