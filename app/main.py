@@ -40,9 +40,9 @@ def create_embed(
 ) -> discord.Embed:
     """Create Discord embed"""
     colors = {
-        ActionType.SEARCH: discord.Color.green(),
+        ActionType.SEARCH: discord.Color.blue(),
         ActionType.LIST: discord.Color.purple(),
-        ActionType.UPDATES: discord.Color.orange(),
+        ActionType.UPDATES: discord.Color.green(),
         ActionType.SUMMARY: discord.Color.gold(),
     }
     embed = discord.Embed(
