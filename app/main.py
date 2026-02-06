@@ -32,6 +32,7 @@ async def process_command(cmd: Command) -> dict:
         "response": result.get("response", "Error"),
         "pages": len(result["data"].pages) if result.get("data") else 0,
         "error": result.get("error"),
+        "data": result.get("data"),
     }
 
 
@@ -172,8 +173,13 @@ async def slash_summary(
 
     result = await process_command(cmd)
 
+    # Get the actual page title if available, otherwise use the search query
+    page_title = target
+    if result.get("data") and result["data"].pages:
+        page_title = result["data"].pages[0].title
+
     embed = create_embed(
-        title=f"📝 Summary: {target}",
+        title=f"📝 Summary: {page_title}",
         content=result["response"],
         action=cmd.action,
         pages=result["pages"],
