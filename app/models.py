@@ -17,6 +17,7 @@ class NotionPage(BaseModel):
     updated_at: datetime
     created_at: datetime
     url: str | None = None
+    content: str | None = None
 
 
 class NotionData(BaseModel):
