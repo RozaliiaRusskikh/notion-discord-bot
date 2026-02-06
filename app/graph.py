@@ -86,10 +86,10 @@ def handle_error(state: State) -> State:
     return {**state, "response": f"❌ Error: {state.get('error', 'Unknown')}"}
 
 
-def route(state: State) -> Literal["analyze", "error"]:
+def route(state: State) -> Literal["analyze", "handle_error"]:
     """Route based on fetch result"""
     if state.get("error"):
-        return "error"
+        return "handle_error"  # Changed from "error"
     return "analyze"
 
 
@@ -97,12 +97,12 @@ def route(state: State) -> Literal["analyze", "error"]:
 graph = StateGraph(State)
 graph.add_node("fetch", fetch)
 graph.add_node("analyze", analyze)
-graph.add_node("error", handle_error)
+graph.add_node("handle_error", handle_error)
 
 graph.set_entry_point("fetch")
-graph.add_conditional_edges("fetch", route, {"analyze": "analyze", "error": "error"})
+graph.add_conditional_edges("fetch", route, {"analyze": "analyze", "handle_error": "handle_error"})
 graph.add_edge("analyze", END)
-graph.add_edge("error", END)
+graph.add_edge("handle_error", END)
 
 pipeline = graph.compile()
 logger.info("✅ Pipeline ready")
