@@ -125,6 +125,109 @@ async def slash_notion(
     await interaction.followup.send(embed=embed)
 
 
+# ===== INDIVIDUAL ACTION COMMANDS =====
+
+
+@bot.tree.command(name="search", description="🔍 Search pages by keyword")
+@app_commands.describe(query="Search terms")
+async def slash_search(
+    interaction: discord.Interaction,
+    query: str,
+):
+    await interaction.response.defer()
+
+    cmd = Command(
+        user_id=str(interaction.user.id),
+        action=ActionType.SEARCH,
+        target=query,
+        query=query,
+    )
+
+    result = await process_command(cmd)
+
+    embed = create_embed(
+        title=f"🔍 Search: {query}",
+        content=result["response"],
+        action=cmd.action,
+        pages=result["pages"],
+    )
+
+    await interaction.followup.send(embed=embed)
+
+
+@bot.tree.command(name="list", description="📋 List all pages in workspace")
+async def slash_list(interaction: discord.Interaction):
+    await interaction.response.defer()
+
+    cmd = Command(
+        user_id=str(interaction.user.id),
+        action=ActionType.LIST,
+        target="workspace",
+        query=None,
+    )
+
+    result = await process_command(cmd)
+
+    embed = create_embed(
+        title="📋 All Pages",
+        content=result["response"],
+        action=cmd.action,
+        pages=result["pages"],
+    )
+
+    await interaction.followup.send(embed=embed)
+
+
+@bot.tree.command(name="updates", description="🔄 Show recently updated pages")
+async def slash_updates(interaction: discord.Interaction):
+    await interaction.response.defer()
+
+    cmd = Command(
+        user_id=str(interaction.user.id),
+        action=ActionType.UPDATES,
+        target="workspace",
+        query=None,
+    )
+
+    result = await process_command(cmd)
+
+    embed = create_embed(
+        title="🔄 Recent Updates",
+        content=result["response"],
+        action=cmd.action,
+        pages=result["pages"],
+    )
+
+    await interaction.followup.send(embed=embed)
+
+
+@bot.tree.command(name="summary", description="📝 Summarize a specific page")
+@app_commands.describe(page="Page name or title")
+async def slash_summary(
+    interaction: discord.Interaction,
+    page: str,
+):
+    await interaction.response.defer()
+
+    cmd = Command(
+        user_id=str(interaction.user.id),
+        action=ActionType.SUMMARY,
+        target=page,
+        query=None,
+    )
+
+    result = await process_command(cmd)
+
+    embed = create_embed(
+        title=f"📝 Summary: {page}",
+        content=result["response"],
+        action=cmd.action,
+        pages=result["pages"],
+    )
+
+    await interaction.followup.send(embed=embed)
+
+
 # ===== NATURAL LANGUAGE =====
 
 
@@ -198,10 +301,11 @@ if __name__ == "__main__":
     logger.info("🚀 NOTION DISCORD BOT")
     logger.info("=" * 50)
     logger.info("Slash commands:")
-    logger.info("  /notion action:search query:meeting")
-    logger.info("  /notion action:list")
-    logger.info("  /notion action:updates")
-    logger.info("  /notion action:summary query:roadmap")
+    logger.info("  /search query:meeting")
+    logger.info("  /list")
+    logger.info("  /updates")
+    logger.info("  /summary page:roadmap")
+    logger.info("  /notion action:search query:meeting (legacy)")
     logger.info("")
     logger.info("Natural language:")
     logger.info("  What's in my workspace?")
