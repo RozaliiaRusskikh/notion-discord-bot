@@ -258,7 +258,7 @@ if __name__ == "__main__":
     import uvicorn
 
     logger.info("=" * 50)
-    logger.info("🚀 NOTION DISCORD BOT")
+    logger.info("🤖 NOTION DISCORD BOT")
     logger.info("=" * 50)
     logger.info("Slash commands:")
     logger.info("  /search query:meeting")
