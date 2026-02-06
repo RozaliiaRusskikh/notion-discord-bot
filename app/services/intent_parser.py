@@ -59,7 +59,7 @@ class IntentParser:
 
         # Fallback: try finding JSON object between first { and last }
         start = text.find("{")
-        end = text.rfind("}")
+        end = text.find("}")
         if start != -1 and end > start:
             try:
                 return json.loads(text[start : end + 1])
