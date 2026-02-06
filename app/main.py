@@ -89,7 +89,6 @@ async def on_ready():
 )
 @app_commands.choices(
     action=[
-        app_commands.Choice(name="📊 Status - Workspace overview", value="status"),
         app_commands.Choice(name="🔍 Search - Find by keyword", value="search"),
         app_commands.Choice(name="📋 List - All pages", value="list"),
         app_commands.Choice(name="🔄 Updates - Recent changes", value="updates"),
