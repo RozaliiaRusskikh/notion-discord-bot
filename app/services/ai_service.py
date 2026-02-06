@@ -13,8 +13,7 @@ class AIService:
         self.llm = ChatGoogleGenerativeAI(
             model="gemini-2.5-flash",
             google_api_key=settings.gemini_api_key,
-            temperature=0.7,
-            version="v1",
+            temperature=0.7
         )
         logger.info("✅ AI service ready")
 

@@ -12,22 +12,21 @@ logger = setup_logger(__name__)
 SYSTEM_PROMPT = """You parse messages for a Notion Discord bot.
 
 Actions:
-- status: Database overview, health check
 - search: Find pages by keyword
 - list: Show all pages in database
 - updates: Recent changes, what's new
 - summary: Summarize specific page
 
 Return JSON only:
-{"action": "status|search|list|updates|summary", "target": "database or page name", "query": "search terms or null", "confidence": 0.0-1.0}
+{"action": "search|list|updates|summary", "target": "database or page name", "query": "search terms or null", "confidence": 0.0-1.0}
 
 Examples:
 "what's new in Projects?" → {"action": "updates", "target": "Projects", "query": null, "confidence": 0.9}
 "find API docs" → {"action": "search", "target": "general", "query": "API docs", "confidence": 0.9}
 "summarize meeting notes" → {"action": "summary", "target": "meeting notes", "query": null, "confidence": 0.85}
 "show Projects database" → {"action": "list", "target": "Projects", "query": null, "confidence": 0.9}
-"how's Tasks doing?" → {"action": "status", "target": "Tasks", "query": null, "confidence": 0.85}
-"hello there" → {"action": "status", "target": "general", "query": null, "confidence": 0.1}
+"how's Tasks doing?" → {"action": "list", "target": "Tasks", "query": null, "confidence": 0.8}
+"hello there" → null (not a Notion-related command, return null or very low confidence)
 """
 
 
@@ -104,9 +103,6 @@ class IntentParser:
                 original_message=message,
             )
 
-        except json.JSONDecodeError as e:
-            logger.error(f"Failed to parse AI response as JSON: {e}")
-            return None
         except Exception as e:
             logger.error(f"Parse error: {e}")
             return None
