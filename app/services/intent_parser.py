@@ -1,4 +1,5 @@
 import json
+import re
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain.schema import HumanMessage, SystemMessage
 
@@ -41,6 +42,32 @@ class IntentParser:
         )
         logger.info("✅ Intent parser ready")
 
+    def _extract_json(self, text: str) -> dict | None:
+        """Extract JSON from text, handling markdown code blocks"""
+        text = text.strip()
+
+        # Remove markdown code fences if present
+        text = re.sub(r"^```(?:json)?\s*\n?", "", text, flags=re.MULTILINE)
+        text = re.sub(r"\n?\s*```$", "", text, flags=re.MULTILINE)
+        text = text.strip()
+
+        # Try parsing the cleaned text first
+        try:
+            return json.loads(text)
+        except json.JSONDecodeError:
+            pass
+
+        # Fallback: try finding JSON object between first { and last }
+        start = text.find("{")
+        end = text.rfind("}")
+        if start != -1 and end > start:
+            try:
+                return json.loads(text[start : end + 1])
+            except json.JSONDecodeError:
+                pass
+
+        return None
+
     def parse(self, message: str, user_id: str) -> Command | None:
         """Parse message into Command or None if not Notion-related"""
         logger.info(f"Parsing: {message[:50]}...")
@@ -53,7 +80,15 @@ class IntentParser:
                 ]
             )
 
-            result = json.loads(response.content.strip())
+            # Extract JSON from response
+            result = self._extract_json(response.content)
+
+            if result is None:
+                logger.error(
+                    f"Failed to parse AI response as JSON. Response: {response.content[:200]}"
+                )
+                return None
+
             logger.info(f"Intent: {result}")
 
             # Skip low confidence
@@ -69,8 +104,8 @@ class IntentParser:
                 original_message=message,
             )
 
-        except json.JSONDecodeError:
-            logger.error("Failed to parse AI response as JSON")
+        except json.JSONDecodeError as e:
+            logger.error(f"Failed to parse AI response as JSON: {e}")
             return None
         except Exception as e:
             logger.error(f"Parse error: {e}")
