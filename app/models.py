@@ -39,3 +39,4 @@ class HealthCheck(BaseModel):
     discord: bool
     notion: bool
     ai: bool
+    github: bool

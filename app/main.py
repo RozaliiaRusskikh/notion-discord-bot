@@ -11,6 +11,8 @@ from app.graph import pipeline, State
 from app.services.intent_parser import intent_parser
 from app.services.notion_service import notion_service
 from app.services.ai_service import ai_service
+from app.services.scheduler_service import scheduler_service
+from app.services.github_service import github_service
 from app.logger import setup_logger
 
 logger = setup_logger(__name__, "bot.log")
@@ -230,25 +232,28 @@ async def on_message(message: discord.Message):
 async def lifespan(app: FastAPI):
     logger.info("🚀 Starting...")
     asyncio.create_task(bot.start(settings.discord_token))
+    scheduler_service.start()
     yield
+    scheduler_service.shutdown()
     await bot.close()
 
 
 api = FastAPI(title="Notion Discord Bot", lifespan=lifespan)
 
 
-@api.get("/")
+@api.get("/", tags=["General"])
 async def root():
     return {"status": "ok", "message": "Notion Discord Bot"}
 
 
-@api.get("/health", response_model=HealthCheck)
+@api.get("/health", response_model=HealthCheck, tags=["Health"])
 async def health(response: Response):
     discord_healthy = bot.is_ready()
     notion_healthy = notion_service.health_check()
     ai_healthy = ai_service.health_check()
+    github_healthy = github_service.health_check()
     
-    all_healthy = discord_healthy and notion_healthy and ai_healthy
+    all_healthy = discord_healthy and notion_healthy and ai_healthy and github_healthy
     
     # Set appropriate HTTP status code
     if not all_healthy:
@@ -259,7 +264,29 @@ async def health(response: Response):
         discord=discord_healthy,
         notion=notion_healthy,
         ai=ai_healthy,
+        github=github_healthy,
     )
+
+
+@api.post("/standup/create", tags=["Standup"])
+async def create_standup_manual():
+    """Manually trigger standup entry creation (for testing)"""
+    try:
+        if not settings.database_id:
+            return {
+                "status": "error",
+                "message": "database_id not configured in .env file"
+            }
+        
+        await scheduler_service.create_standup_entry()
+        return {
+            "status": "success", 
+            "message": "Standup entry creation triggered",
+            "database_id": settings.database_id
+        }
+    except Exception as e:
+        logger.error(f"Manual standup creation failed: {e}", exc_info=True)
+        return {"status": "error", "message": str(e)}
 
 
 # ===== RUN =====

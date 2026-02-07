@@ -7,6 +7,9 @@ class Settings(BaseSettings):
     discord_token: str
     notion_api_key: str
     gemini_api_key: str
+    github_token: str
+    database_id: str
+    standup_channel_id: int
     api_host: str = "0.0.0.0"
     api_port: int = 8000
 
