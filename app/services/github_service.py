@@ -43,7 +43,7 @@ class GitHubService:
             repo_list = ", ".join(
                 [f"{r['owner']}/{r['repo']}" for r in self.repositories]
             )
-            logger.info(f"✅ GitHub service ready for: {repo_list}")
+            logger.info(f"✅ GitHub service ready for: {repo_list} (filtered by user: {settings.github_user})")
         else:
             self.headers = {
                 "Accept": "application/vnd.github.v3+json",
@@ -58,7 +58,10 @@ class GitHubService:
         params = {
             "since": since_iso,
             "per_page": min(max_commits, 100),
+            "author": settings.github_user,  # Always filter by GitHub username (required)
         }
+        
+        logger.debug(f"Filtering commits by GitHub user: {settings.github_user}")
 
         try:
             logger.debug(f"Fetching commits from {owner}/{repo} since {since_iso}")
@@ -72,12 +75,23 @@ class GitHubService:
                 for commit in commits:
                     commit_data = commit.get("commit", {})
                     author = commit_data.get("author", {})
+                    author_name = author.get("name", "Unknown")
+                    author_email = author.get("email", "")
+                    
+                    # Additional client-side filtering by GitHub username (double-check)
+                    # The API author parameter filters by GitHub username, but we verify here
+                    commit_author = commit.get("author")
+                    if commit_author:
+                        author_login = commit_author.get("login", "").lower()
+                        github_user_lower = settings.github_user.lower()
+                        if author_login and github_user_lower != author_login:
+                            continue  # Skip if GitHub username doesn't match
 
                     formatted_commits.append(
                         {
                             "sha": commit.get("sha", "")[:7],
                             "message": commit_data.get("message", "").strip(),
-                            "author": author.get("name", "Unknown"),
+                            "author": author_name,
                             "date": author.get("date", ""),
                             "url": commit.get("html_url", ""),
                             "repo": f"{owner}/{repo}",  # Add repo identifier

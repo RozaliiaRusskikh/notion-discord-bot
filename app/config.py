@@ -11,6 +11,7 @@ class Settings(BaseSettings):
     database_id: str
     standup_channel_id: int
     github_repos: str | None = None
+    github_user: str  # Filter commits by GitHub username (required)
     api_host: str = "0.0.0.0"
     api_port: int = 8000
 
