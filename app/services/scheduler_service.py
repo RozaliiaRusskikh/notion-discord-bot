@@ -1,4 +1,4 @@
-import zoneinfo
+from zoneinfo import ZoneInfo
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
 from datetime import datetime, timezone, timedelta
@@ -16,7 +16,7 @@ class SchedulerService:
 
     def __init__(self):
         self.scheduler = AsyncIOScheduler()
-        self.pst = zoneinfo.zoneinfo("America/Los_Angeles")
+        self.pst = ZoneInfo("America/Los_Angeles")
         logger.info("✅ Scheduler service ready")
 
     def setup_standup_job(self):
