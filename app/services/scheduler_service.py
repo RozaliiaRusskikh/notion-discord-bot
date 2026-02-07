@@ -121,26 +121,42 @@ class SchedulerService:
                 timestamp=datetime.now(timezone.utc),
             )
 
-            # Add commit information - show only 10 latest commits
+            # Add commit information - split into multiple fields if needed
             if commits:
-                # Limit to 10 latest commits
+                # Limit to 10 latest commits for display
                 latest_commits = commits[:10]
                 commit_lines = [
                     self._format_commit_line(commit, i + 1)
                     for i, commit in enumerate(latest_commits)
                 ]
                 
-                commit_text = f"Found **{len(commits)}** commit(s)"
+                header = f"Found **{len(commits)}** commit(s)"
                 if len(commits) > 10:
-                    commit_text += f" (showing 10 latest):\n\n"
+                    header += f" (showing 10 latest):\n\n"
                 else:
-                    commit_text += ":\n\n"
+                    header += ":\n\n"
                 
-                commit_text += "\n".join(commit_lines)
+                # Discord field limit is 1024 chars, split if needed
+                max_field_length = 1000  # Leave some buffer
+                current_field = header
+                field_count = 1
+                header_length = len(header)
                 
-                embed.add_field(
-                    name="🔄 Recent Commits", value=commit_text, inline=False
-                )
+                for line in commit_lines:
+                    test_line = current_field + line + "\n"
+                    if len(test_line) > max_field_length and len(current_field) > header_length:
+                        # Save current field and start new one
+                        field_name = "🔄 Recent Commits" if field_count == 1 else f"🔄 Commits (continued {field_count})"
+                        embed.add_field(name=field_name, value=current_field.strip(), inline=False)
+                        current_field = line + "\n"
+                        field_count += 1
+                    else:
+                        current_field += line + "\n"
+                
+                # Add the last field
+                if len(current_field) > header_length:
+                    field_name = "🔄 Recent Commits" if field_count == 1 else f"🔄 Commits (continued {field_count})"
+                    embed.add_field(name=field_name, value=current_field.strip(), inline=False)
             else:
                 embed.add_field(
                     name="🔄 Recent Commits",
