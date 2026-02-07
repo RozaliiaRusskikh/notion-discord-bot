@@ -10,6 +10,7 @@ class Settings(BaseSettings):
     github_token: str
     database_id: str
     standup_channel_id: int
+    github_repos: str | None = None
     api_host: str = "0.0.0.0"
     api_port: int = 8000
 
