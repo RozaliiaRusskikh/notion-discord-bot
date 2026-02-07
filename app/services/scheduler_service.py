@@ -121,18 +121,18 @@ class SchedulerService:
                 timestamp=datetime.now(timezone.utc),
             )
 
-            # Add commit information - show only 5 latest commits
+            # Add commit information - show only 3 latest commits
             if commits:
-                # Limit to 5 latest commits for display
-                latest_commits = commits[:5]
+                # Limit to 3 latest commits for display
+                latest_commits = commits[:3]
                 commit_lines = [
                     self._format_commit_line(commit, i + 1)
                     for i, commit in enumerate(latest_commits)
                 ]
                 
                 commit_text = f"Found **{len(commits)}** commit(s)"
-                if len(commits) > 5:
-                    commit_text += f" (showing 5 latest - see Notion for all):\n\n"
+                if len(commits) > 3:
+                    commit_text += f" (showing 3 latest - see Notion for all):\n\n"
                 else:
                     commit_text += ":\n\n"
                 
