@@ -121,45 +121,26 @@ class SchedulerService:
                 timestamp=datetime.now(timezone.utc),
             )
 
-            # Add commit information
+            # Add commit information - show only 10 latest commits
             if commits:
+                # Limit to 10 latest commits
+                latest_commits = commits[:10]
                 commit_lines = [
                     self._format_commit_line(commit, i + 1)
-                    for i, commit in enumerate(commits)
+                    for i, commit in enumerate(latest_commits)
                 ]
-                commit_text = f"Found **{len(commits)}** commit(s):\n\n" + "\n".join(
-                    commit_lines
-                )
-
-                # Discord field limit is 1024 chars, split if needed
-                max_field_length = 1000
-                if len(commit_text) > max_field_length:
-                    # Split into chunks
-                    chunks = []
-                    current_chunk = f"Found **{len(commits)}** commit(s):\n\n"
-                    for line in commit_lines:
-                        if (
-                            len(current_chunk + line + "\n") > max_field_length
-                            and current_chunk
-                        ):
-                            chunks.append(current_chunk.strip())
-                            current_chunk = line + "\n"
-                        else:
-                            current_chunk += line + "\n"
-                    if current_chunk.strip():
-                        chunks.append(current_chunk.strip())
-
-                    for i, chunk in enumerate(chunks):
-                        field_name = (
-                            "🔄 Recent Commits"
-                            if i == 0
-                            else f"🔄 Commits (continued {i+1})"
-                        )
-                        embed.add_field(name=field_name, value=chunk, inline=False)
+                
+                commit_text = f"Found **{len(commits)}** commit(s)"
+                if len(commits) > 10:
+                    commit_text += f" (showing 10 latest):\n\n"
                 else:
-                    embed.add_field(
-                        name="🔄 Recent Commits", value=commit_text, inline=False
-                    )
+                    commit_text += ":\n\n"
+                
+                commit_text += "\n".join(commit_lines)
+                
+                embed.add_field(
+                    name="🔄 Recent Commits", value=commit_text, inline=False
+                )
             else:
                 embed.add_field(
                     name="🔄 Recent Commits",
