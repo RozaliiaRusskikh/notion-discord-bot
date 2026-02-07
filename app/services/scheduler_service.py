@@ -50,10 +50,9 @@ class SchedulerService:
         url = commit.get("url", "")
         repo = commit.get("repo", "")
 
-        repo_prefix = f"**[{repo}]** " if repo else ""
         if url:
-            return f"{index}. {repo_prefix}[{sha[:7]}]({url}) {message} - *{author}*"
-        return f"{index}. {repo_prefix}{sha[:7]} {message} - *{author}*"
+            return f"{index}. [{sha[:7]}]({url}) {message} - *{author}*"
+        return f"{index}. {sha[:7]} {message} - *{author}*"
 
     def _add_notion_link(
         self, embed: discord.Embed, page_id: str | None, page_url: str | None
