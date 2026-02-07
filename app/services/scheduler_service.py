@@ -45,14 +45,12 @@ class SchedulerService:
         if len(message) > 100:
             message = message[:97] + "..."
 
-        author = commit.get("author", "Unknown")
         sha = commit.get("sha", "")
         url = commit.get("url", "")
-        repo = commit.get("repo", "")
 
         if url:
-            return f"{index}. [{sha[:7]}]({url}) {message} - *{author}*"
-        return f"{index}. {sha[:7]} {message} - *{author}*"
+            return f"{index}. [{sha[:7]}]({url}) - {message}"
+        return f"{index}. {sha[:7]} - {message}"
 
     def _add_notion_link(
         self, embed: discord.Embed, page_id: str | None, page_url: str | None
@@ -131,7 +129,7 @@ class SchedulerService:
                 
                 commit_text = f"Found **{len(commits)}** commit(s)"
                 if len(commits) > 3:
-                    commit_text += f" (showing 3 latest - see Notion for all):\n\n"
+                    commit_text += f" (showing 3 latest - refer to Notion document to view all):\n\n"
                 else:
                     commit_text += ":\n\n"
                 
