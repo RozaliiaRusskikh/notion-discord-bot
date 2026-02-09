@@ -21,7 +21,6 @@ class SchedulerService:
 
     def setup_standup_job(self):
         """Schedule standup job for Mon/Wed/Fri at 09:30am PST"""
-        # Schedule for Monday, Wednesday, Friday at 10:00 AM PST
         trigger = CronTrigger(
             day_of_week="mon,wed,fri",
             hour=9,
