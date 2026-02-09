@@ -24,8 +24,8 @@ class SchedulerService:
         # Schedule for Monday, Wednesday, Friday at 10:00 AM PST
         trigger = CronTrigger(
             day_of_week="mon,wed,fri",
-            hour=10,
-            minute=0,
+            hour=9,
+            minute=30,
             timezone=self.pst,
         )
 
